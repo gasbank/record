@@ -309,7 +309,7 @@ namespace record_windows
 		}
 
 		if (m_pConfig && m_pConfig->encoderName == AudioEncoder::wav) {
-			MediaType::FillWavHeader(m_recordingPath, m_pMediaType, m_dataWritten);
+			MediaType::FillWavHeader(m_recordingPath);
 		}
 
 		m_bFirstSample = true;

@@ -110,70 +110,95 @@ HRESULT CreateOutputProfile(const RecordConfig& config, IMFMediaType** ppType)
 	return hr;
 }
 
-struct WAV_FILE_HEADER
+HRESULT FillWavHeader(const std::wstring& path)
 {
-	RIFFCHUNK    FileHeader;
-	DWORD        fccWaveType;
-	RIFFCHUNK    WaveHeader;
-	WAVEFORMATEX WaveFormat;
-	RIFFCHUNK    DataHeader;
-};
+	HANDLE hFile = CreateFile(
+		path.c_str(),
+		GENERIC_READ | GENERIC_WRITE, 0, NULL,
+		OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL
+	);
 
-HRESULT FillWavHeader(const std::wstring& path, IMFMediaType* pMediaType, DWORD dataWritten)
-{
-	WAVEFORMATEX* pWav = NULL;
-	UINT cbSize = 0;
-	DWORD cbWritten = 0;
-
-	WAV_FILE_HEADER header;
-	ZeroMemory(&header, sizeof(header));
-
-	DWORD cbFileSize = dataWritten + sizeof(WAV_FILE_HEADER) - sizeof(RIFFCHUNK);
-
-	HRESULT hr = MFCreateWaveFormatExFromMFMediaType(pMediaType, &pWav, &cbSize);
-
-	if (SUCCEEDED(hr))
+	if (hFile == INVALID_HANDLE_VALUE)
 	{
-		header.FileHeader.fcc = MAKEFOURCC('R', 'I', 'F', 'F');
-		header.FileHeader.cb  = cbFileSize;
-		header.fccWaveType    = MAKEFOURCC('W', 'A', 'V', 'E');
-		header.WaveHeader.fcc = MAKEFOURCC('f', 'm', 't', ' ');
-		header.WaveHeader.cb  = RIFFROUND(sizeof(WAVEFORMATEX));
-		CopyMemory(&header.WaveFormat, pWav, sizeof(WAVEFORMATEX));
-		header.DataHeader.fcc = MAKEFOURCC('d', 'a', 't', 'a');
-		header.DataHeader.cb  = dataWritten;
+		printf("Record: Error when opening WAVE file.");
+		return E_FAIL;
+	}
 
-		CoTaskMemFree(pWav);
+	DWORD fileSize = GetFileSize(hFile, NULL);
+	DWORD bytesTransferred = 0;
 
-		HANDLE hFile = CreateFile(path.c_str(),
-			GENERIC_READ | GENERIC_WRITE, 0, NULL,
-			OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+	RIFFCHUNK riffHeader;
+	DWORD fccWaveType = 0;
 
-		if (hFile == INVALID_HANDLE_VALUE)
+	if (fileSize == INVALID_FILE_SIZE ||
+		!ReadFile(hFile, &riffHeader, sizeof(riffHeader), &bytesTransferred, NULL) ||
+		bytesTransferred != sizeof(riffHeader) || riffHeader.fcc != MAKEFOURCC('R', 'I', 'F', 'F') ||
+		!ReadFile(hFile, &fccWaveType, sizeof(fccWaveType), &bytesTransferred, NULL) ||
+		bytesTransferred != sizeof(fccWaveType) || fccWaveType != MAKEFOURCC('W', 'A', 'V', 'E'))
+	{
+		printf("Record: Unrecognized WAVE file layout.");
+		CloseHandle(hFile);
+		return E_FAIL;
+	}
+
+	// Walk the chunks following the "WAVE" fourcc to locate the "data" chunk.
+	DWORD offset = sizeof(RIFFCHUNK) + sizeof(DWORD);
+	DWORD dataChunkOffset = 0;
+	bool foundDataChunk = false;
+
+	while (offset + sizeof(RIFFCHUNK) <= fileSize)
+	{
+		RIFFCHUNK chunk;
+		if (!ReadFile(hFile, &chunk, sizeof(chunk), &bytesTransferred, NULL) || bytesTransferred != sizeof(chunk))
 		{
-			printf("Record: Error when opening WAVE file.");
-			return E_FAIL;
+			break;
 		}
 
-		if (SetFilePointer(hFile, 0, NULL, FILE_BEGIN) == INVALID_SET_FILE_POINTER)
+		if (chunk.fcc == MAKEFOURCC('d', 'a', 't', 'a'))
 		{
-			printf("Record: Error when seeking to start of WAVE file.");
-			CloseHandle(hFile);
-			return E_FAIL;
+			dataChunkOffset = offset;
+			foundDataChunk = true;
+			break;
 		}
 
-		if (!WriteFile(hFile, (BYTE*)&header, sizeof(WAV_FILE_HEADER), &cbWritten, NULL))
+		offset += sizeof(RIFFCHUNK) + RIFFROUND(chunk.cb);
+		if (SetFilePointer(hFile, offset, NULL, FILE_BEGIN) == INVALID_SET_FILE_POINTER)
 		{
-			printf("Record: Error when writing WAVE file RIFF header.");
-			CloseHandle(hFile);
-			return E_FAIL;
+			break;
 		}
+	}
 
-		if (!CloseHandle(hFile))
-		{
-			printf("Record: Error when closing WAVE file.");
-			return E_FAIL;
-		}
+	if (!foundDataChunk)
+	{
+		printf("Record: Could not locate WAVE data chunk.");
+		CloseHandle(hFile);
+		return E_FAIL;
+	}
+
+	DWORD riffSize = fileSize - sizeof(RIFFCHUNK);
+	DWORD dataSize = fileSize - dataChunkOffset - sizeof(RIFFCHUNK);
+
+	HRESULT hr = S_OK;
+
+	if (SetFilePointer(hFile, FIELD_OFFSET(RIFFCHUNK, cb), NULL, FILE_BEGIN) == INVALID_SET_FILE_POINTER ||
+		!WriteFile(hFile, &riffSize, sizeof(riffSize), &bytesTransferred, NULL) || bytesTransferred != sizeof(riffSize))
+	{
+		printf("Record: Error when writing WAVE RIFF size.");
+		hr = E_FAIL;
+	}
+
+	if (SUCCEEDED(hr) &&
+		(SetFilePointer(hFile, dataChunkOffset + FIELD_OFFSET(RIFFCHUNK, cb), NULL, FILE_BEGIN) == INVALID_SET_FILE_POINTER ||
+		!WriteFile(hFile, &dataSize, sizeof(dataSize), &bytesTransferred, NULL) || bytesTransferred != sizeof(dataSize)))
+	{
+		printf("Record: Error when writing WAVE data size.");
+		hr = E_FAIL;
+	}
+
+	if (!CloseHandle(hFile) && SUCCEEDED(hr))
+	{
+		printf("Record: Error when closing WAVE file.");
+		hr = E_FAIL;
 	}
 
 	return hr;

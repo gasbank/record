@@ -13,7 +13,7 @@ namespace MediaType {
 
 HRESULT CreateInputProfile(const RecordConfig& config, IMFMediaType** ppType);
 HRESULT CreateOutputProfile(const RecordConfig& config, IMFMediaType** ppType);
-HRESULT FillWavHeader(const std::wstring& path, IMFMediaType* pMediaType, DWORD dataWritten);
+HRESULT FillWavHeader(const std::wstring& path);
 
 } // namespace MediaType
 } // namespace record_windows

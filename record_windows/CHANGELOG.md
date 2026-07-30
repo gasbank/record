@@ -1,3 +1,6 @@
+## 2.2.3
+* fix: Corrupted WAV file size fields.
+
 ## 2.2.2
 * fix: non-ascii char in comment preventing compilation when using simplified shinese codepage.
 
