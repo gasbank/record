@@ -1,5 +1,6 @@
 ## 2.1.2
 * fix: Potential Future hang when stopping.
+* fix: `listInputDevices` double enumeration.
 
 ## 2.1.1
 * fix: Hide internals in src/ folder.

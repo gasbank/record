@@ -54,21 +54,16 @@ class Recorder {
   }
 
   Future<List<InputDevice>> listInputDevices() async {
-    final mediaDevices = web.window.navigator.mediaDevices;
     try {
-      var deviceInfos = await mediaDevices.enumerateDevices().toDart;
+      await _requestPermission();
+
+      var deviceInfos = await web.window.navigator.mediaDevices
+          .enumerateDevices()
+          .toDart;
+
       var inputs = deviceInfos.toDart
           .where((d) => d.kind == 'audioinput')
           .toList();
-
-      // Before permission is granted, browsers return devices without labels (or none at all).
-      if (inputs.isEmpty || inputs.every((d) => d.label.isEmpty)) {
-        await _requestPermission();
-        deviceInfos = await mediaDevices.enumerateDevices().toDart;
-        inputs = deviceInfos.toDart
-            .where((d) => d.kind == 'audioinput')
-            .toList();
-      }
 
       return inputs
           .map((d) => InputDevice(id: d.deviceId, label: d.label))
