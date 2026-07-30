@@ -143,11 +143,11 @@ class MediaRecorderDelegate extends RecorderDelegate {
   @override
   Future<String?> stop() async {
     if (_isRecording()) {
-      _onStopCompleter = Completer();
+      final completer = _onStopCompleter ??= Completer();
 
       _mediaRecorder?.stop();
 
-      return _onStopCompleter!.future;
+      return completer.future;
     }
 
     return null;
@@ -211,7 +211,14 @@ class MediaRecorderDelegate extends RecorderDelegate {
     } finally {
       await _reset();
       onStateChanged(RecordState.stop);
-      _onStopCompleter?.complete(audioUrl);
+
+      if (_onStopCompleter case final completer?) {
+        _onStopCompleter = null;
+
+        if (!completer.isCompleted) {
+          completer.complete(audioUrl);
+        }
+      }
     }
   }
 
