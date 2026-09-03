@@ -19,6 +19,12 @@ namespace record_windows
 		static constexpr const char* wav       = "wav";
 	};
 
+	struct PcmFormat
+	{
+		static constexpr const char* int16   = "int16";
+		static constexpr const char* float32 = "float32";
+	};
+
 	struct RecordConfig
 	{
 		std::string encoderName = AudioEncoder::aacLc;
@@ -26,6 +32,7 @@ namespace record_windows
 		int bitRate = 128000;
 		int sampleRate = 44100;
 		int numChannels = 2;
+		std::string pcmFormat = PcmFormat::int16;
 		bool autoGain = false;
 		bool echoCancel = false;
 		bool noiseSuppress = false;
@@ -37,6 +44,7 @@ namespace record_windows
 			int bitRate,
 			int sampleRate,
 			int numChannels,
+			const std::string& pcmFormat,
 			bool autoGain,
 			bool echoCancel,
 			bool noiseSuppress,
@@ -46,11 +54,18 @@ namespace record_windows
 			bitRate(bitRate),
 			sampleRate(sampleRate),
 			numChannels(numChannels),
+			pcmFormat(pcmFormat == PcmFormat::float32 ? PcmFormat::float32 : PcmFormat::int16),
 			autoGain(autoGain),
 			echoCancel(echoCancel),
 			noiseSuppress(noiseSuppress),
 			rawArgs(std::move(rawArgs))
 		{
+		}
+
+		bool usesFloatPcm() const
+		{
+			return pcmFormat == PcmFormat::float32 &&
+				(encoderName == AudioEncoder::pcm16bits || encoderName == AudioEncoder::wav);
 		}
 	};
 };

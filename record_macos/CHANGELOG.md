@@ -1,4 +1,5 @@
 ## 2.1.1
+* feat: Add configurable 32-bit float PCM stream and WAV recording.
 * fix: Throw for unsupported stream encoders.
 
 ## 2.1.0

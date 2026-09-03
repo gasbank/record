@@ -1,4 +1,5 @@
 ## 2.2.3
+* feat: Add configurable 32-bit float PCM stream and WAV recording.
 * fix: Corrupted WAV file size fields.
 
 ## 2.2.2

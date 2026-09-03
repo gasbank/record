@@ -47,9 +47,13 @@ private extension AudioRecordingDelegate {
     let sampleRate = getInputSampleRate(device: config.device) ?? Double(config.sampleRate)
     let channels   = deviceChannels.map { UInt32(max(1, $0)) }
                      ?? UInt32(min(config.numChannels, 2))
+    let usesRequestedPcmFormat =
+      config.encoder == AudioEncoder.pcm16bits.rawValue || config.encoder == AudioEncoder.wav.rawValue
+    let commonFormat: AVAudioCommonFormat =
+      usesRequestedPcmFormat && config.pcmFormat == .float32 ? .pcmFormatFloat32 : .pcmFormatInt16
 
     return AVAudioFormat(
-      commonFormat: .pcmFormatInt16,
+      commonFormat: commonFormat,
       sampleRate: sampleRate,
       channels: channels,
       interleaved: false
@@ -121,10 +125,11 @@ private extension AudioRecordingDelegate {
   }
 
   func pcmSettings(config: RecordConfig) -> [String: Any] {
-    [
+    let isFloat = config.pcmFormat == .float32
+    return [
       AVFormatIDKey:               kAudioFormatLinearPCM,
-      AVLinearPCMBitDepthKey:      16,
-      AVLinearPCMIsFloatKey:       false,
+      AVLinearPCMBitDepthKey:      isFloat ? 32 : 16,
+      AVLinearPCMIsFloatKey:       isFloat,
       AVLinearPCMIsBigEndianKey:   false,
       AVLinearPCMIsNonInterleaved: false,
       AVSampleRateKey:             config.sampleRate,

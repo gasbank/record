@@ -43,8 +43,9 @@ static HRESULT CreateAmrWbProfile(IMFMediaType* pType)
 
 static HRESULT CreatePcmProfile(const RecordConfig& config, IMFMediaType* pType)
 {
-	const UINT32 bitsPerSample = 16;
-	HRESULT hr = pType->SetGUID(MF_MT_SUBTYPE, MFAudioFormat_PCM);
+	const bool isFloat = config.usesFloatPcm();
+	const UINT32 bitsPerSample = isFloat ? 32 : 16;
+	HRESULT hr = pType->SetGUID(MF_MT_SUBTYPE, isFloat ? MFAudioFormat_Float : MFAudioFormat_PCM);
 	if (SUCCEEDED(hr)) hr = pType->SetUINT32(MF_MT_AUDIO_BITS_PER_SAMPLE, bitsPerSample);
 
 	UINT32 blockAlign     = config.numChannels * (bitsPerSample / 8);
@@ -62,13 +63,19 @@ HRESULT CreateInputProfile(const RecordConfig& config, IMFMediaType** ppType)
 {
 	IMFMediaType* pType = NULL;
 	HRESULT hr = MFCreateMediaType(&pType);
+	const bool isFloat = config.usesFloatPcm();
+	const UINT32 bitsPerSample = isFloat ? 32 : 16;
+	const UINT32 blockAlign = config.numChannels * (bitsPerSample / 8);
+	const UINT32 bytesPerSecond = blockAlign * config.sampleRate;
 
 	if (SUCCEEDED(hr)) hr = pType->SetGUID(MF_MT_MAJOR_TYPE, MFMediaType_Audio);
-	if (SUCCEEDED(hr)) hr = pType->SetGUID(MF_MT_SUBTYPE, MFAudioFormat_PCM);
-	if (SUCCEEDED(hr)) hr = pType->SetUINT32(MF_MT_AUDIO_BITS_PER_SAMPLE, 16);
+	if (SUCCEEDED(hr)) hr = pType->SetGUID(MF_MT_SUBTYPE, isFloat ? MFAudioFormat_Float : MFAudioFormat_PCM);
+	if (SUCCEEDED(hr)) hr = pType->SetUINT32(MF_MT_AUDIO_BITS_PER_SAMPLE, bitsPerSample);
 	if (SUCCEEDED(hr)) hr = pType->SetUINT32(MF_MT_AUDIO_SAMPLES_PER_SECOND, config.sampleRate);
 	if (SUCCEEDED(hr)) hr = pType->SetUINT32(MF_MT_AUDIO_NUM_CHANNELS, config.numChannels);
-	if (SUCCEEDED(hr)) hr = pType->SetUINT32(MF_MT_AVG_BITRATE, config.bitRate);
+	if (SUCCEEDED(hr)) hr = pType->SetUINT32(MF_MT_AUDIO_BLOCK_ALIGNMENT, blockAlign);
+	if (SUCCEEDED(hr)) hr = pType->SetUINT32(MF_MT_AUDIO_AVG_BYTES_PER_SECOND, bytesPerSecond);
+	if (SUCCEEDED(hr)) hr = pType->SetUINT32(MF_MT_ALL_SAMPLES_INDEPENDENT, TRUE);
 	if (SUCCEEDED(hr))
 	{
 		*ppType = pType;

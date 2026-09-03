@@ -8,7 +8,7 @@ struct AmplitudeTracker {
 	double current = -160.0;
 	double peak    = -160.0;
 
-	void update(const BYTE* chunk, DWORD size);
+	void update(const BYTE* chunk, DWORD size, bool isFloat);
 	void reset();
 };
 

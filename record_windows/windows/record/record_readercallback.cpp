@@ -106,7 +106,7 @@ namespace record_windows
 		if (SUCCEEDED(hr))
 		{
 			m_dataWritten += size;
-			m_amplitude.update(pChunk, size);
+			m_amplitude.update(pChunk, size, m_pConfig && m_pConfig->usesFloatPcm());
 			pBuffer->Unlock();
 		}
 

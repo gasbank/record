@@ -39,9 +39,10 @@ class RecordConfig {
 
   /// The sample representation used for uncompressed PCM output.
   ///
-  /// On Android and iOS, this applies to [AudioEncoder.pcm16bits] and
-  /// [AudioEncoder.wav]. Other encoders ignore this setting. The default
-  /// preserves the historical signed 16-bit PCM behavior.
+  /// On Android, iOS, macOS, and Windows, this applies to
+  /// [AudioEncoder.pcm16bits] and [AudioEncoder.wav]. Other encoders ignore
+  /// this setting. The default preserves the historical signed 16-bit PCM
+  /// behavior.
   final PcmFormat pcmFormat;
 
   /// The device to be used for recording. If null, default device

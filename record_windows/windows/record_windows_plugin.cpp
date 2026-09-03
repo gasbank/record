@@ -308,6 +308,8 @@ namespace record_windows {
 		GetValueFromEncodableMap(args, "sampleRate", sampleRate);
 		int numChannels;
 		GetValueFromEncodableMap(args, "numChannels", numChannels);
+		std::string pcmFormat = PcmFormat::int16;
+		GetValueFromEncodableMap(args, "pcmFormat", pcmFormat);
 		EncodableMap device;
 		std::string deviceId;
 		if (GetValueFromEncodableMap(args, "device", device))
@@ -327,6 +329,7 @@ namespace record_windows {
 			bitRate,
 			sampleRate,
 			numChannels,
+			pcmFormat,
 			autoGain,
 			echoCancel,
 			noiseSuppress,
@@ -376,6 +379,7 @@ namespace record_windows {
 				args[EncodableValue("bitRate")]     = EncodableValue(cfg.bitRate);
 				args[EncodableValue("sampleRate")]  = EncodableValue(cfg.sampleRate);
 				args[EncodableValue("numChannels")] = EncodableValue(cfg.numChannels);
+				args[EncodableValue("pcmFormat")]   = EncodableValue(cfg.pcmFormat);
 				pChannel->InvokeMethod("onConfigChanged",
 					std::make_unique<EncodableValue>(EncodableMap(std::move(args))));
 			});
