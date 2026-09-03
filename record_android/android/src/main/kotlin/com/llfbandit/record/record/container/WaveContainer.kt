@@ -1,5 +1,6 @@
 package com.llfbandit.record.record.container
 
+import android.media.AudioFormat
 import android.media.MediaCodec
 import android.media.MediaFormat
 import android.system.Os
@@ -15,6 +16,7 @@ class WaveContainer(path: String, private val frameSize: Int) : IContainerWriter
   private var track = -1
   private var channelCount = 0
   private var sampleRate = 0
+  private var pcmEncoding = AudioFormat.ENCODING_PCM_16BIT
 
   override fun start() {
     if (isStarted) {
@@ -24,7 +26,7 @@ class WaveContainer(path: String, private val frameSize: Int) : IContainerWriter
     Os.ftruncate(file.fd, 0)
 
     // Skip header
-    Os.lseek(file.fd, HEADER_SIZE.toLong(), OsConstants.SEEK_SET)
+    Os.lseek(file.fd, headerSize.toLong(), OsConstants.SEEK_SET)
 
     isStarted = true
   }
@@ -64,6 +66,9 @@ class WaveContainer(path: String, private val frameSize: Int) : IContainerWriter
     track = 0
     channelCount = mediaFormat.getInteger(MediaFormat.KEY_CHANNEL_COUNT)
     sampleRate = mediaFormat.getInteger(MediaFormat.KEY_SAMPLE_RATE)
+    if (mediaFormat.containsKey(MediaFormat.KEY_PCM_ENCODING)) {
+      pcmEncoding = mediaFormat.getInteger(MediaFormat.KEY_PCM_ENCODING)
+    }
 
     return track
   }
@@ -85,14 +90,14 @@ class WaveContainer(path: String, private val frameSize: Int) : IContainerWriter
   }
 
   private fun buildHeader(fileSize: Long): ByteBuffer {
-    return ByteBuffer.allocate(HEADER_SIZE).apply {
+    return ByteBuffer.allocate(headerSize).apply {
       order(ByteOrder.LITTLE_ENDIAN)
 
-      val (chunkSize, dataSize) = if (fileSize > MAX_FILE_SIZE - HEADER_SIZE) {
+      val (chunkSize, dataSize) = if (fileSize > MAX_FILE_SIZE - headerSize) {
         Log.w(TAG, "File is oversized! WAV files can only fit in 4GB max.")
-        Pair(MAX_FILE_SIZE - 8, MAX_FILE_SIZE - HEADER_SIZE)
+        Pair(MAX_FILE_SIZE - 8, MAX_FILE_SIZE - headerSize)
       } else {
-        Pair(fileSize - 8, fileSize - HEADER_SIZE)
+        Pair(fileSize - 8, fileSize - headerSize)
       }
 
       // 0-3: Chunk ID
@@ -106,7 +111,7 @@ class WaveContainer(path: String, private val frameSize: Int) : IContainerWriter
       // 16-19: Subchunk 1 size
       putInt(16)
       // 20-21: Audio format
-      putShort(1)
+      putShort((if (pcmEncoding == AudioFormat.ENCODING_PCM_FLOAT) 3 else 1).toShort())
       // 22-23: Number of channels
       putShort(channelCount.toShort())
       // 24-27: Sample rate
@@ -117,14 +122,23 @@ class WaveContainer(path: String, private val frameSize: Int) : IContainerWriter
       putShort(frameSize.toShort())
       // 34-35: Bits per sample
       putShort(((frameSize / channelCount) * 8).toShort())
-      // 36-39: Subchunk 2 ID
+      if (pcmEncoding == AudioFormat.ENCODING_PCM_FLOAT) {
+        // IEEE float WAV files include a fact chunk containing the frame count.
+        put(FACT_MAGIC)
+        putInt(4)
+        putInt((dataSize / frameSize).coerceAtMost(UInt.MAX_VALUE.toLong()).toInt())
+      }
+      // Data subchunk ID
       put(DATA_MAGIC)
-      // 40-43: Subchunk 2 size
+      // Data subchunk size
       put(longToUInt32(dataSize))
 
       flip()
     }
   }
+
+  private val headerSize: Int
+    get() = if (pcmEncoding == AudioFormat.ENCODING_PCM_FLOAT) FLOAT_HEADER_SIZE else PCM_HEADER_SIZE
 
   private fun longToUInt32(value: Long): ByteArray {
     val bytes = ByteArray(4)
@@ -138,11 +152,13 @@ class WaveContainer(path: String, private val frameSize: Int) : IContainerWriter
   companion object {
     private val TAG = WaveContainer::class.java.simpleName
 
-    private const val HEADER_SIZE = 44
+    private const val PCM_HEADER_SIZE = 44
+    private const val FLOAT_HEADER_SIZE = 56
     private const val MAX_FILE_SIZE = 4_294_967_296L - 1
     private val RIFF_MAGIC = byteArrayOf(0x52, 0x49, 0x46, 0x46) // RIFF
     private val WAVE_MAGIC = byteArrayOf(0x57, 0x41, 0x56, 0x45) // WAVE
     private val FMT_MAGIC = byteArrayOf(0x66, 0x6d, 0x74, 0x20) // "fmt "
+    private val FACT_MAGIC = byteArrayOf(0x66, 0x61, 0x63, 0x74) // fact
     private val DATA_MAGIC = byteArrayOf(0x64, 0x61, 0x74, 0x61) // data
   }
 }

@@ -11,6 +11,8 @@ import 'types.dart';
 /// `numChannels`: The numbers of channels for the recording.
 /// 1 = mono, 2 = stereo.
 ///
+/// `pcmFormat`*: The sample representation for raw PCM and WAV recordings.
+///
 /// `device`: The device to be used for recording. If null, default device
 /// will be selected.
 ///
@@ -34,6 +36,13 @@ class RecordConfig {
   /// The numbers of channels for the recording. 1 = mono, 2 = stereo.
   /// Most platforms only accept 2 at most.
   final int numChannels;
+
+  /// The sample representation used for uncompressed PCM output.
+  ///
+  /// On Android and iOS, this applies to [AudioEncoder.pcm16bits] and
+  /// [AudioEncoder.wav]. Other encoders ignore this setting. The default
+  /// preserves the historical signed 16-bit PCM behavior.
+  final PcmFormat pcmFormat;
 
   /// The device to be used for recording. If null, default device
   /// will be selected.
@@ -80,6 +89,7 @@ class RecordConfig {
     this.bitRate = 128000,
     this.sampleRate = 44100,
     this.numChannels = 2,
+    this.pcmFormat = PcmFormat.int16,
     this.device,
     this.autoGain = false,
     this.echoCancel = false,
@@ -95,6 +105,7 @@ class RecordConfig {
     int? bitRate,
     int? sampleRate,
     int? numChannels,
+    PcmFormat? pcmFormat,
     ({InputDevice? value})? device,
     bool? autoGain,
     bool? echoCancel,
@@ -109,6 +120,7 @@ class RecordConfig {
       bitRate: bitRate ?? this.bitRate,
       sampleRate: sampleRate ?? this.sampleRate,
       numChannels: numChannels ?? this.numChannels,
+      pcmFormat: pcmFormat ?? this.pcmFormat,
       device: device != null ? device.value : this.device,
       autoGain: autoGain ?? this.autoGain,
       echoCancel: echoCancel ?? this.echoCancel,
@@ -130,6 +142,10 @@ class RecordConfig {
       bitRate: map['bitRate'] as int? ?? 128000,
       sampleRate: map['sampleRate'] as int? ?? 44100,
       numChannels: map['numChannels'] as int? ?? 2,
+      pcmFormat: PcmFormat.values.firstWhere(
+        (format) => format.name == map['pcmFormat'],
+        orElse: () => PcmFormat.int16,
+      ),
       device: map['device'] != null
           ? InputDevice.fromMap(map['device'] as Map)
           : null,
@@ -149,6 +165,7 @@ class RecordConfig {
       'bitRate': bitRate,
       'sampleRate': sampleRate,
       'numChannels': numChannels,
+      'pcmFormat': pcmFormat.name,
       'device': device?.toMap(),
       'autoGain': autoGain,
       'echoCancel': echoCancel,
@@ -167,6 +184,7 @@ class RecordConfig {
         '  bitRate: $bitRate,\n'
         '  sampleRate: $sampleRate,\n'
         '  numChannels: $numChannels,\n'
+        '  pcmFormat: $pcmFormat,\n'
         '  device: $device,\n'
         '  autoGain: $autoGain,\n'
         '  echoCancel: $echoCancel,\n'

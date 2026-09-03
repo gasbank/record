@@ -12,6 +12,11 @@ public enum AudioEncoder: String {
   case wav = "wav"
 }
 
+public enum PcmFormat: String {
+  case int16 = "int16"
+  case float32 = "float32"
+}
+
 public enum AudioInterruptionMode: Int {
   case none = 0
   case pause = 1
@@ -23,6 +28,7 @@ public class RecordConfig {
   var bitRate: Int
   var sampleRate: Int
   var numChannels: Int
+  let pcmFormat: PcmFormat
   let device: Device?
   let autoGain: Bool
   let echoCancel: Bool
@@ -36,13 +42,15 @@ public class RecordConfig {
   var isModified: Bool {
     bitRate    != (m_args["bitRate"]     as? Int ?? 128000) ||
     sampleRate != (m_args["sampleRate"]  as? Int ?? 44100)  ||
-    numChannels != (m_args["numChannels"] as? Int ?? 2)
+    numChannels != (m_args["numChannels"] as? Int ?? 2) ||
+    pcmFormat.rawValue != (m_args["pcmFormat"] as? String ?? PcmFormat.int16.rawValue)
   }
 
   init(encoder: String,
        bitRate: Int,
        sampleRate: Int,
        numChannels: Int,
+       pcmFormat: PcmFormat = .int16,
        device: Device? = nil,
        autoGain: Bool = false,
        echoCancel: Bool = false,
@@ -55,6 +63,7 @@ public class RecordConfig {
     self.bitRate = bitRate
     self.sampleRate = sampleRate
     self.numChannels = numChannels
+    self.pcmFormat = pcmFormat
     self.device = device
     self.autoGain = autoGain
     self.echoCancel = echoCancel
@@ -145,6 +154,7 @@ extension RecordConfig {
     map["bitRate"] = bitRate
     map["sampleRate"] = sampleRate
     map["numChannels"] = numChannels
+    map["pcmFormat"] = pcmFormat.rawValue
     return map
   }
 
@@ -161,6 +171,7 @@ extension RecordConfig {
       bitRate: args["bitRate"] as? Int ?? 128000,
       sampleRate: args["sampleRate"] as? Int ?? 44100,
       numChannels: args["numChannels"] as? Int ?? 2,
+      pcmFormat: (args["pcmFormat"] as? String).flatMap(PcmFormat.init(rawValue:)) ?? .int16,
       device: device,
       autoGain: args["autoGain"] as? Bool ?? false,
       echoCancel: args["echoCancel"] as? Bool ?? false,

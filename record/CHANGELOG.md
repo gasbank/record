@@ -1,4 +1,5 @@
 ## 7.1.1
+- feat: Add configurable 16-bit integer and 32-bit float PCM output on Android and iOS.
 - fix(ios): Guard ios specific calls to avoid "Recorder has not yet been created..." exception.
 
 ## 7.1.0

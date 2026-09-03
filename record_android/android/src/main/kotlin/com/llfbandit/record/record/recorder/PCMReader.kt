@@ -19,11 +19,15 @@ class PCMReader(
   companion object {
     private val TAG = PCMReader::class.java.simpleName
     private const val DEFAULT_AMPLITUDE_DB = -160.0
-    private const val MAX_PCM_VALUE = 32767.0 // 2^15 - 1 for 16-bit signed
+    private const val MAX_PCM_16_VALUE = 32767.0 // 2^15 - 1 for 16-bit signed
   }
 
+  private val audioFormat: Int = getAudioFormat()
   private val bufferSize: Int = initBufferSize()
-  private val readBuffer: ShortArray = ShortArray(bufferSize / 2)
+  private val shortBuffer: ShortArray? =
+    if (audioFormat == AudioFormat.ENCODING_PCM_16BIT) ShortArray(bufferSize / 2) else null
+  private val floatBuffer: FloatArray? =
+    if (audioFormat == AudioFormat.ENCODING_PCM_FLOAT) FloatArray(bufferSize / 4) else null
   private val reader: AudioRecord = createReader()
   private val effects: AudioEffectsManager =
     AudioEffectsManager(reader.audioSessionId).also { it.apply(config) }
@@ -42,7 +46,16 @@ class PCMReader(
 
   @Throws(Exception::class)
   fun read(): ByteArray {
-    val readResult = reader.read(readBuffer, 0, readBuffer.size)
+    val readResult = when (audioFormat) {
+      AudioFormat.ENCODING_PCM_FLOAT -> {
+        val buffer = requireNotNull(floatBuffer)
+        reader.read(buffer, 0, buffer.size, AudioRecord.READ_BLOCKING)
+      }
+      else -> {
+        val buffer = requireNotNull(shortBuffer)
+        reader.read(buffer, 0, buffer.size)
+      }
+    }
     if (readResult < 0) {
       throw Exception(getReadFailureReason(readResult))
     }
@@ -119,7 +132,12 @@ class PCMReader(
     }
   }
 
-  private fun getAudioFormat(): Int = AudioFormat.ENCODING_PCM_16BIT
+  private fun getAudioFormat(): Int =
+    if (mediaFormat.containsKey(MediaFormat.KEY_PCM_ENCODING)) {
+      mediaFormat.getInteger(MediaFormat.KEY_PCM_ENCODING)
+    } else {
+      AudioFormat.ENCODING_PCM_16BIT
+    }
 
   private fun getChannelsConfig(): Int {
     val numChannels = mediaFormat.getInteger(MediaFormat.KEY_CHANNEL_COUNT)
@@ -128,17 +146,30 @@ class PCMReader(
   }
 
   private fun convertToByteArray(size: Int): ByteArray {
-    val byteBuffer = ByteBuffer.allocate(size * 2).order(ByteOrder.LITTLE_ENDIAN)
-    for (i in 0 until size) {
-      byteBuffer.putShort(readBuffer[i])
+    val bytesPerSample = if (audioFormat == AudioFormat.ENCODING_PCM_FLOAT) 4 else 2
+    val byteBuffer = ByteBuffer.allocate(size * bytesPerSample).order(ByteOrder.LITTLE_ENDIAN)
+    when (audioFormat) {
+      AudioFormat.ENCODING_PCM_FLOAT -> {
+        val buffer = requireNotNull(floatBuffer)
+        for (i in 0 until size) byteBuffer.putFloat(buffer[i])
+      }
+      else -> {
+        val buffer = requireNotNull(shortBuffer)
+        for (i in 0 until size) byteBuffer.putShort(buffer[i])
+      }
     }
     return byteBuffer.array()
   }
 
   private fun calculateAmplitudeDb(size: Int): Double {
-    val max = readBuffer.take(size).maxOf { abs(it.toInt()) }
-    if (max == 0) return DEFAULT_AMPLITUDE_DB
-    return 0.0.coerceAtMost(20 * log10(max / MAX_PCM_VALUE))
+    val normalizedMax = when (audioFormat) {
+      AudioFormat.ENCODING_PCM_FLOAT ->
+        requireNotNull(floatBuffer).take(size).maxOf { abs(it.toDouble()) }
+      else ->
+        requireNotNull(shortBuffer).take(size).maxOf { abs(it.toInt()) } / MAX_PCM_16_VALUE
+    }
+    if (normalizedMax == 0.0) return DEFAULT_AMPLITUDE_DB
+    return 0.0.coerceAtMost(20 * log10(normalizedMax))
   }
 
   private fun getReadFailureReason(errorCode: Int): String {

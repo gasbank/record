@@ -51,7 +51,10 @@ enum AudioEncoder {
   /// Suggested file extension: `wav`
   wav,
 
-  /// Linear PCM 16 bit per sample
+  /// Raw linear PCM using [RecordConfig.pcmFormat].
+  ///
+  /// Defaults to signed 16-bit PCM for backwards compatibility. The enum name
+  /// is retained for source compatibility.
   ///
   /// Suggested file extension: `pcm`
   pcm16bits,

@@ -2,6 +2,7 @@ package com.llfbandit.record.record.model
 
 import android.content.Context
 import android.media.AudioDeviceInfo
+import android.media.AudioFormat
 import android.media.AudioManager
 import android.media.MediaRecorder
 import android.os.Build
@@ -15,6 +16,7 @@ class RecordConfig(
   var bitRate: Int,
   var sampleRate: Int,
   var numChannels: Int,
+  val pcmFormat: PcmFormat,
   val device: AudioDeviceInfo?,
   val autoGain: Boolean = false,
   val echoCancel: Boolean = false,
@@ -42,10 +44,11 @@ class RecordConfig(
     "sampleRate" to sampleRate,
     "numChannels" to numChannels,
     "bitRate" to bitRate,
+    "pcmFormat" to pcmFormat.value,
   )
 
   fun copy() = RecordConfig(
-    path, encoder.value, bitRate, sampleRate, numChannels,
+    path, encoder.value, bitRate, sampleRate, numChannels, pcmFormat,
     device, autoGain, echoCancel, noiseSuppress,
     useLegacy, muteAudio, manageBluetoothSco, audioSource,
     speakerphone, audioManagerMode, audioInterruption.ordinal,
@@ -55,7 +58,8 @@ class RecordConfig(
   fun isModified(other: RecordConfig): Boolean =
     sampleRate != other.sampleRate ||
     numChannels != other.numChannels ||
-    bitRate != other.bitRate
+    bitRate != other.bitRate ||
+    pcmFormat != other.pcmFormat
 
   companion object {
     fun fromMap(call: MethodCall, context: Context): RecordConfig {
@@ -120,6 +124,7 @@ class RecordConfig(
         Utils.firstNonNull(call.argument("bitRate"), 128000),
         Utils.firstNonNull(call.argument("sampleRate"), 44100),
         Utils.firstNonNull(call.argument("numChannels"), 2),
+        PcmFormat.from(Utils.firstNonNull(call.argument("pcmFormat"), "int16")),
         DeviceUtils.deviceInfoFromMap(context, call.argument("device")),
         Utils.firstNonNull(call.argument("autoGain"), false),
         Utils.firstNonNull(call.argument("echoCancel"), false),
@@ -162,4 +167,18 @@ enum class AudioInterruption {
   NONE,
   PAUSE,
   PAUSE_RESUME
+}
+
+enum class PcmFormat(
+  val value: String,
+  val audioEncoding: Int,
+  val bytesPerSample: Int,
+) {
+  Int16("int16", AudioFormat.ENCODING_PCM_16BIT, 2),
+  Float32("float32", AudioFormat.ENCODING_PCM_FLOAT, 4);
+
+  companion object {
+    fun from(value: String): PcmFormat =
+      entries.firstOrNull { it.value == value } ?: Int16
+  }
 }

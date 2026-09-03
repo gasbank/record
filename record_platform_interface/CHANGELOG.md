@@ -1,4 +1,5 @@
 ## 2.1.0
+* feat: Add `PcmFormat` and `RecordConfig.pcmFormat`.
 * feat: Improve InputDevice description with sample rates and type.
 * fix: codec/device caps and surface `onConfigChanged` to dart side.
 

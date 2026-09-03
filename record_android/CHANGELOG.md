@@ -1,4 +1,5 @@
 ## 2.1.2
+* feat: Add configurable 32-bit float PCM stream and WAV recording.
 * fix: Throw for unsupported stream encoders.
 * fix: Flac regression from CSD changes.
 * fix: Improve consistency of device/codec caps adjustment flow.

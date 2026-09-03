@@ -9,12 +9,13 @@ class WaveFormat : Format() {
   override val mimeTypeAudio: String = MediaFormat.MIMETYPE_AUDIO_RAW
 
   override fun getMediaFormat(config: RecordConfig): MediaFormat {
-    val frameSize = config.numChannels * 16 / 8
+    val frameSize = config.numChannels * config.pcmFormat.bytesPerSample
 
     return MediaFormat().apply {
       setString(MediaFormat.KEY_MIME, mimeTypeAudio)
       setInteger(MediaFormat.KEY_SAMPLE_RATE, config.sampleRate)
       setInteger(MediaFormat.KEY_CHANNEL_COUNT, config.numChannels)
+      setInteger(MediaFormat.KEY_PCM_ENCODING, config.pcmFormat.audioEncoding)
       setInteger(KEY_X_FRAME_SIZE_IN_BYTES, frameSize)
     }
   }

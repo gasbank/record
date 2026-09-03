@@ -1,15 +1,16 @@
 import AVFoundation
 
 /// Handles the audio processing pipeline for a stream recording session:
-/// PCM format conversion, amplitude tracking, and encoding (AAC or PCM16).
+/// PCM format conversion, amplitude tracking, and encoding (AAC or PCM).
 class AudioStreamProcessor {
   private let m_converter: AVAudioConverter
   private let m_encoder: AudioEnc
   private var m_amplitude: Float = -160.0
 
   init(config: RecordConfig, srcFormat: AVAudioFormat) throws {
+    let isFloatPcm = config.encoder == AudioEncoder.pcm16bits.rawValue && config.pcmFormat == .float32
     guard let outputFormat = AVAudioFormat(
-      commonFormat: .pcmFormatInt16,
+      commonFormat: isFloatPcm ? .pcmFormatFloat32 : .pcmFormatInt16,
       sampleRate: Double(config.sampleRate),
       channels: AVAudioChannelCount(config.numChannels),
       interleaved: false
@@ -34,7 +35,11 @@ class AudioStreamProcessor {
       try aac.setup(config: config, format: outputFormat)
       m_encoder = aac
     } else if config.encoder == AudioEncoder.pcm16bits.rawValue {
-      m_encoder = Pcm16BitsEncoder()
+      if isFloatPcm {
+        m_encoder = PcmFloat32Encoder()
+      } else {
+        m_encoder = Pcm16BitsEncoder()
+      }
     } else {
       throw RecorderError.error(
         message: "Failed to start recording",
@@ -82,14 +87,21 @@ class AudioStreamProcessor {
   }
 
   private func updateAmplitude(_ buffer: AVAudioPCMBuffer) {
-    guard let channelData = buffer.int16ChannelData else { return }
     let frameCount = Int(buffer.frameLength)
     var maxSample: Float = 0
-    let ch0 = channelData[0]
-    for i in 0..<frameCount {
-      let s = abs(Float(ch0[i]))
-      if s > maxSample { maxSample = s }
+    if let channelData = buffer.floatChannelData {
+      let ch0 = channelData[0]
+      for i in 0..<frameCount {
+        let sample = abs(ch0[i])
+        if sample > maxSample { maxSample = sample }
+      }
+    } else if let channelData = buffer.int16ChannelData {
+      let ch0 = channelData[0]
+      for i in 0..<frameCount {
+        let sample = abs(Float(ch0[i])) / 32767.0
+        if sample > maxSample { maxSample = sample }
+      }
     }
-    m_amplitude = maxSample > 0 ? 20 * log10(maxSample / 32767.0) : -160.0
+    m_amplitude = maxSample > 0 ? min(0, 20 * log10(maxSample)) : -160.0
   }
 }
