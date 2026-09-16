@@ -10,6 +10,7 @@ namespace record_windows {
 namespace AudioDevice {
 
 HRESULT ListInputDevices(flutter::EncodableList& devices);
+flutter::EncodableValue GetDefaultInputDevice();
 HRESULT IsEncoderSupported(const std::string& encoderName, bool* supported);
 HRESULT AdjustConfigToDeviceCaps(RecordConfig& config);
 HRESULT AdjustConfigToCodecCaps(RecordConfig& config);

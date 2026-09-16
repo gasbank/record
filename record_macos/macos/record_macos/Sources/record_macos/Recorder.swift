@@ -89,6 +89,8 @@ class Recorder {
 
   func listInputDevices() throws -> [Device] { try listInputs() }
 
+  func getDefaultInputDevice() throws -> Device? { try getDefaultInput() }
+
   func getAmplitude() -> [String: Float] {
     var amp = ["current": minAmplitudeDB, "max": minAmplitudeDB]
     if let current = m_delegate?.getAmplitude() {

@@ -62,6 +62,8 @@ public class RecordMacOsPlugin: NSObject, FlutterPlugin {
       case "getAmplitude": self.run(result: result) { recorder.getAmplitude() }
       case "isEncoderSupported": self.handleIsEncoderSupported(recorder: recorder, args: args, result: result)
       case "listInputDevices":   self.handleListInputDevices(recorder: recorder, result: result)
+      case "getDefaultInputDevice":
+        self.run(result: result) { try recorder.getDefaultInputDevice()?.toMap() }
       case "dispose":            self.handleDispose(recorderId: recorderId, recorder: recorder, result: result)
       default: DispatchQueue.main.async { result(FlutterMethodNotImplemented) }
       }

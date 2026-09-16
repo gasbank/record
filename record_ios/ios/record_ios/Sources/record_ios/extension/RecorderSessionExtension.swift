@@ -77,7 +77,10 @@ private extension AudioRecordingDelegate {
   }
 
   func applyPreferredInputDevice(_ device: Device?) throws {
-    guard let device else { return }
+    guard let device else {
+      try AVAudioSession.sharedInstance().setPreferredInput(nil)
+      return
+    }
     guard let inputs = try listInputDevices() else { return }
     guard let match = inputs.first(where: { $0.uid == device.id }) else { return }
     do {

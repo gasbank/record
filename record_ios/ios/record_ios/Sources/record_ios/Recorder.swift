@@ -94,6 +94,21 @@ class Recorder {
 
   func listInputDevices() throws -> [Device] { try listInputs() }
 
+  func getDefaultInputDevice() -> Device? {
+    guard m_state == .record,
+          let config = m_delegate?.config,
+          config.device == nil else { return nil }
+    let session = AVAudioSession.sharedInstance()
+    guard session.preferredInput == nil,
+          session.currentRoute.inputs.count == 1,
+          let input = session.currentRoute.inputs.first else { return nil }
+    return Device(
+      id: input.uid,
+      label: input.portName,
+      type: portTypeToInputDeviceType(input.portType)
+    )
+  }
+
   func getAmplitude() -> [String: Float] {
     var amp = ["current": minAmplitudeDB, "max": minAmplitudeDB]
     if let current = m_delegate?.getAmplitude() {

@@ -121,6 +121,14 @@ class MediaRecorder(
     stopRecording()
   }
 
+  override fun getDefaultInputDevice(): android.media.AudioDeviceInfo? {
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.P ||
+      mConfig == null || mConfig?.device != null || !mIsRecording || mIsPaused) {
+      return null
+    }
+    return mRecorder?.routedDevice
+  }
+
   private fun stopRecording() {
     if (mRecorder != null) {
       try {

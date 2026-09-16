@@ -47,5 +47,8 @@ interface IRecorder {
    */
   fun getAmplitude(): List<Double>
 
+  /** Identifies the live automatic input, without probing or changing routes. */
+  fun getDefaultInputDevice(): android.media.AudioDeviceInfo? = null
+
   fun dispose()
 }

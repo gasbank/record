@@ -14,6 +14,22 @@ func listInputs() throws -> [Device] {
   return devices
 }
 
+func getDefaultInput() throws -> Device? {
+  var address = AudioObjectPropertyAddress(
+    mSelector: kAudioHardwarePropertyDefaultInputDevice,
+    mScope: kAudioObjectPropertyScopeGlobal,
+    mElement: kAudioObjectPropertyElementMain
+  )
+  var deviceID = kAudioObjectUnknown
+  var size = UInt32(MemoryLayout<AudioDeviceID>.size)
+  guard AudioObjectGetPropertyData(
+    AudioObjectID(kAudioObjectSystemObject), &address, 0, nil, &size, &deviceID
+  ) == noErr, deviceID != kAudioObjectUnknown else { return nil }
+  return try listInputs().first {
+    getAudioDeviceIDFromUID(uid: $0.id) == deviceID
+  }
+}
+
 func getInputTransportType(deviceID: AudioDeviceID) -> String {
   var addr = AudioObjectPropertyAddress(
     mSelector: kAudioDevicePropertyTransportType,

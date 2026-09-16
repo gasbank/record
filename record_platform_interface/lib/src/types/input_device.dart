@@ -1,4 +1,5 @@
 import 'input_device_type.dart';
+import 'input_device_location.dart';
 
 class InputDevice {
   /// The ID used to select the device on the platform.
@@ -13,6 +14,11 @@ class InputDevice {
   /// device types (Linux, Web).
   final InputDeviceType type;
 
+  /// The reported location of this input route.
+  ///
+  /// Unknown when the platform or device cannot identify its location.
+  final InputDeviceLocation location;
+
   /// The sample rates supported or prefered by this device.
   ///
   /// Empty if the platform does not report per-device sample rates (iOS, Web).
@@ -22,6 +28,7 @@ class InputDevice {
     required this.id,
     required this.label,
     this.type = InputDeviceType.unknown,
+    this.location = InputDeviceLocation.unknown,
     this.sampleRates = const [],
   });
 
@@ -29,6 +36,7 @@ class InputDevice {
     id: map['id'],
     label: map['label'],
     type: InputDeviceType.fromString(map['type'] as String?),
+    location: InputDeviceLocation.fromString(map['location'] as String?),
     sampleRates: List<int>.from(map['sampleRates'] as List? ?? const []),
   );
 
@@ -36,6 +44,7 @@ class InputDevice {
     'id': id,
     'label': label,
     'type': type.name,
+    'location': location.name,
     if (sampleRates.isNotEmpty) 'sampleRates': sampleRates,
   };
 
@@ -45,6 +54,7 @@ class InputDevice {
       id: $id
       label: $label
       type: $type
+      location: $location
       sampleRates: $sampleRates
       ''';
   }

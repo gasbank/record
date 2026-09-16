@@ -87,6 +87,13 @@ class RecorderWrapper(
     result.success(recorder?.isPaused ?: false)
   }
 
+  fun getDefaultInputDevice(result: MethodChannel.Result) {
+    val device = recorder?.getDefaultInputDevice()
+    result.success(device?.let {
+      com.llfbandit.record.record.util.DeviceUtils.deviceInfoToMap(it)
+    })
+  }
+
   fun isRecording(result: MethodChannel.Result) {
     result.success(recorder?.isRecording ?: false)
   }

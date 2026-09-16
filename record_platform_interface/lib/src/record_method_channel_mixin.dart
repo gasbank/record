@@ -143,6 +143,19 @@ mixin RecordMethodChannel implements RecordMethodChannelPlatformInterface {
   }
 
   @override
+  Future<InputDevice?> getDefaultInputDevice(String recorderId) async {
+    try {
+      final device = await _methodChannel.invokeMapMethod<String, dynamic>(
+        'getDefaultInputDevice',
+        {'recorderId': recorderId},
+      );
+      return device == null ? null : InputDevice.fromMap(device);
+    } on MissingPluginException {
+      return null;
+    }
+  }
+
+  @override
   RecordIos? getIos(String recorderId) {
     if (kIsWeb || TargetPlatform.iOS != defaultTargetPlatform) return null;
 

@@ -94,6 +94,13 @@ class AudioRecorder(
     return listOf(amplitude, maxAmplitude)
   }
 
+  override fun getDefaultInputDevice(): android.media.AudioDeviceInfo? {
+    if (config == null || config?.device != null || !isRecording || isPaused) {
+      return null
+    }
+    return recorderThread?.getRoutedDevice()
+  }
+
   override fun dispose() {
     stop(null)
   }

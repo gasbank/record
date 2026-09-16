@@ -28,6 +28,14 @@ class AudioRecorder with _AmplitudeMixin, _StateMixin, _StreamMixin {
 
   RecordPlatform get _platform => RecordPlatform.instance;
 
+  /// Identifies the OS-default input without starting another recording.
+  ///
+  /// Android and iOS can identify it only while this recorder captures with
+  /// automatic input selection. Windows uses the communications input role.
+  /// Returns null when the default is unknown, unavailable, or unsupported.
+  Future<InputDevice?> getDefaultInputDevice() =>
+      _safeCall(() => _platform.getDefaultInputDevice(_recorderId));
+
   /// Creates a new audio recorder.
   AudioRecorder() : _recorderId = UuidV4.generate() {
     _createFuture = () async {

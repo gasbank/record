@@ -3,6 +3,7 @@ export 'android_record_config.dart';
 export 'audio_encoder.dart';
 export 'audio_interruption_mode.dart';
 export 'input_device.dart';
+export 'input_device_location.dart';
 export 'input_device_type.dart';
 export 'ios_audio_session.dart';
 export 'ios_record_config.dart';

@@ -69,6 +69,9 @@ class MethodCallHandlerImpl(
       "listInputDevices" -> dispatch(entry, result) {
         result.success(DeviceUtils.listInputDevicesAsMap(appContext))
       }
+      "getDefaultInputDevice" -> dispatch(entry, result) {
+        entry.recorder.getDefaultInputDevice(result)
+      }
       "dispose" -> disposeRecorder(entry, recorderId, result)
       "isEncoderSupported" -> dispatch(entry, result) { isEncoderSupported(call, result) }
       else -> result.notImplemented()

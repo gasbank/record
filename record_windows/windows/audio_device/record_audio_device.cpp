@@ -202,6 +202,49 @@ HRESULT ListInputDevices(flutter::EncodableList& devices)
 	return SUCCEEDED(hr) ? S_OK : hr;
 }
 
+flutter::EncodableValue GetDefaultInputDevice()
+{
+    IMMDeviceEnumerator* enumerator = nullptr;
+    IMMDevice* endpoint = nullptr;
+    LPWSTR endpointId = nullptr;
+    flutter::EncodableValue result;
+
+    HRESULT hr = CoCreateInstance(
+        __uuidof(MMDeviceEnumerator), nullptr, CLSCTX_ALL,
+        IID_PPV_ARGS(&enumerator));
+    if (SUCCEEDED(hr))
+        hr = enumerator->GetDefaultAudioEndpoint(eCapture, eCommunications, &endpoint);
+    if (SUCCEEDED(hr))
+        hr = endpoint->GetId(&endpointId);
+
+    if (SUCCEEDED(hr) && endpointId)
+    {
+        const std::string id = Utf8FromUtf16(endpointId);
+        flutter::EncodableList devices;
+        if (SUCCEEDED(ListInputDevices(devices)))
+        {
+            for (const auto& device : devices)
+            {
+                const auto* values = std::get_if<flutter::EncodableMap>(&device);
+                if (!values) continue;
+                const auto found = values->find(flutter::EncodableValue("id"));
+                if (found == values->end()) continue;
+                const auto* deviceId = std::get_if<std::string>(&found->second);
+                if (deviceId && *deviceId == id)
+                {
+                    result = device;
+                    break;
+                }
+            }
+        }
+    }
+
+    CoTaskMemFree(endpointId);
+    SafeRelease(&endpoint);
+    SafeRelease(&enumerator);
+    return result;
+}
+
 HRESULT IsEncoderSupported(const std::string& encoderName, bool* supported)
 {
 	MFT_REGISTER_TYPE_INFO typeLookup = {};

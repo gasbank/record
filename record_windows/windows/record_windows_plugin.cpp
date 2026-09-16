@@ -284,6 +284,10 @@ namespace record_windows {
 				ErrorFromHR(hr, *result);
 			}
 		}
+		else if (method_call.method_name().compare("getDefaultInputDevice") == 0)
+		{
+			result->Success(AudioDevice::GetDefaultInputDevice());
+		}
 		else if (method_call.method_name().compare("listInputDevices") == 0)
 		{
 			EncodableList devices;

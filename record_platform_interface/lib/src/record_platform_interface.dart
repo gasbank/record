@@ -23,6 +23,9 @@ abstract class RecordPlatform extends PlatformInterface
 
   @override
   RecordIos? getIos(String recorderId) => null;
+
+  @override
+  Future<InputDevice?> getDefaultInputDevice(String recorderId) async => null;
 }
 
 /// Record method channel platform interface
@@ -90,6 +93,13 @@ abstract class RecordMethodChannelPlatformInterface {
   /// On web, and in general, you should already have permission before
   /// accessing this method otherwise the list may return an empty list.
   Future<List<InputDevice>> listInputDevices(String recorderId);
+
+  /// Returns an identifiable OS-default input, without opening audio capture.
+  ///
+  /// Android and iOS require this recorder to be actively capturing with
+  /// automatic device selection. Windows uses the communications input role.
+  /// Returns null when unavailable or unsupported, never a guessed device.
+  Future<InputDevice?> getDefaultInputDevice(String recorderId);
 
   /// Stops the recording if needed and remove current file.
   Future<void> cancel(String recorderId);

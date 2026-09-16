@@ -74,6 +74,19 @@ class PCMReader(
 
   fun getAmplitude(): Double = amplitudeDb
 
+  fun getRoutedDevice(): android.media.AudioDeviceInfo? {
+    return try {
+      if (reader.recordingState == AudioRecord.RECORDSTATE_RECORDING) {
+        reader.routedDevice
+      } else {
+        null
+      }
+    } catch (_: IllegalStateException) {
+      // The capture thread may have released the reader during this query.
+      null
+    }
+  }
+
   override fun close() {
     release()
   }

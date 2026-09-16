@@ -75,6 +75,11 @@ class RecordThread(
 
   fun getAmplitude(): Double = mPcmReaderRef?.getAmplitude() ?: -160.0
 
+  fun getRoutedDevice(): android.media.AudioDeviceInfo? {
+    if (!isRecording() || isPaused()) return null
+    return mPcmReaderRef?.getRoutedDevice()
+  }
+
   @Throws(Exception::class)
   fun startRecording() {
     Format.checkStreamSupport(config)

@@ -22,13 +22,30 @@ class DeviceUtils {
       return filterSources(devices.asList())
     }
 
-    private fun deviceInfoToMap(device: AudioDeviceInfo): Map<String, Any> {
+    fun deviceInfoToMap(device: AudioDeviceInfo): Map<String, Any> {
       return mapOf(
         "id" to "${device.id}",
         "label" to device.productName,
         "type" to typeToInputDeviceType(device.type),
+        "location" to deviceLocation(device),
         "sampleRates" to device.sampleRates.toList(),
       )
+    }
+
+    private fun deviceLocation(device: AudioDeviceInfo): String {
+      if (Build.VERSION.SDK_INT < Build.VERSION_CODES.P ||
+        device.type != AudioDeviceInfo.TYPE_BUILTIN_MIC) return "unknown"
+
+      // Addresses are OEM-specific. Only explicit whole-value locations count.
+      return when (device.address.trim().lowercase(java.util.Locale.ROOT)) {
+        "top", "upper" -> "top"
+        "bottom", "lower" -> "bottom"
+        "front" -> "front"
+        "back", "rear" -> "back"
+        "left" -> "left"
+        "right" -> "right"
+        else -> "unknown"
+      }
     }
 
     private fun typeToInputDeviceType(type: Int): String {

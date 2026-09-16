@@ -67,6 +67,8 @@ public class RecordIosPlugin: NSObject, FlutterPlugin {
       case "getAmplitude": self.run(result: result) { recorder.getAmplitude() }
       case "isEncoderSupported":      self.handleIsEncoderSupported(recorder: recorder, args: args, result: result)
       case "listInputDevices":        self.handleListInputDevices(recorder: recorder, result: result)
+      case "getDefaultInputDevice":
+        self.run(result: result) { recorder.getDefaultInputDevice()?.toMap() }
       case "dispose":                 self.handleDispose(recorderId: recorderId, recorder: recorder, result: result)
       case "ios.manageAudioSession":      self.handleManageAudioSession(recorder: recorder, args: args, result: result)
       case "ios.setAudioSessionActive":   self.handleSetAudioSessionActive(recorder: recorder, args: args, result: result)
