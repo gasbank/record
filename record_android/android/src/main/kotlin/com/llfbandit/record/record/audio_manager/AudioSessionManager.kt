@@ -114,11 +114,19 @@ class AudioSessionManager(
         .setOnAudioFocusChangeListener(focusChangeListener!!, Handler(Looper.getMainLooper()))
         .build()
 
-      audioManager.requestAudioFocus(focusRequest!!)
+      val result = audioManager.requestAudioFocus(focusRequest!!)
+      if (result != AudioManager.AUDIOFOCUS_REQUEST_GRANTED) {
+        abandonAudioFocus()
+        throw IllegalStateException("Audio input unavailable: audio focus not granted")
+      }
     } else {
-      audioManager.requestAudioFocus(
+      val result = audioManager.requestAudioFocus(
         focusChangeListener, AudioManager.STREAM_VOICE_CALL, AudioManager.AUDIOFOCUS_GAIN
       )
+      if (result != AudioManager.AUDIOFOCUS_REQUEST_GRANTED) {
+        abandonAudioFocus()
+        throw IllegalStateException("Audio input unavailable: audio focus not granted")
+      }
     }
   }
 

@@ -4,6 +4,7 @@ import android.annotation.SuppressLint
 import android.media.AudioFormat
 import android.media.AudioRecord
 import android.media.MediaFormat
+import android.os.Build
 import android.util.Log
 import com.llfbandit.record.record.audio_manager.AudioEffectsManager
 import com.llfbandit.record.record.model.RecordConfig
@@ -46,6 +47,10 @@ class PCMReader(
 
   @Throws(Exception::class)
   fun read(): ByteArray {
+    if (Build.VERSION.SDK_INT >= 29 &&
+        reader.activeRecordingConfiguration?.isClientSilenced == true) {
+      throw IllegalStateException("Audio input unavailable: capture silenced by OS")
+    }
     val readResult = when (audioFormat) {
       AudioFormat.ENCODING_PCM_FLOAT -> {
         val buffer = requireNotNull(floatBuffer)

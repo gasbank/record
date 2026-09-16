@@ -48,9 +48,9 @@ class AudioRecorder(
   @Throws(Exception::class)
   override fun start(config: RecordConfig) {
     this.config = config
+    audioSession.apply(config, requestFocus = true)
     recorderThread = RecordThread(config, this)
     recorderThread!!.startRecording()
-    audioSession.apply(config, requestFocus = true)
   }
 
   override fun stop(stopCb: ((path: String?) -> Unit)?) {
